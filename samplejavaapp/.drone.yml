@@ -1,0 +1,29 @@
+---
+kind: pipeline
+type: docker
+name: default
+steps:
+- name: clonerepo
+  image: alpine/git
+  commands:
+  - git clone https://github.com/nareshcgi/MyCITest.git
+- name: buildpackage 
+  image: maven:3-jdk-11
+  pull: always # never, if-not-exists
+  commands:
+  - cd MyCITest/samplejavaapp
+  - mvn clean install
+  - cp target/*.war ../../
+  - mvn clean verify sonar:sonar -Dsonar.java.source=1.8 -Dsonar.projectKey=TestJava -Dsonar.host.url=http://192.168.86.34:9000 -Dsonar.login=e6c2a9c8f4a628e74117f7ad47783677c8601d60
+- name: cleanup
+  image: alpine/git
+  # pull: always # never, if-not-exists
+  commands:
+  - ls -la
+  - rm -rf MyCITest
+  when:
+    status:
+    - success
+    - failure
+
+    # mvn archetype:generate -DgroupId=io.nareshcool.app -DartifactId=myjavawebapp -DarchetypeArtifactId=maven-archetype-webapp -DinteractiveMode=false

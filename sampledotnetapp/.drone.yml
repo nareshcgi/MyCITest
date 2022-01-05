@@ -1,0 +1,24 @@
+---
+kind: pipeline
+type: docker
+name: default
+
+steps:
+- name: clonerepo
+  image: alpine/git
+  commands:
+  - rm -rf MyCITest
+  - ls -la
+  - git clone https://github.com/nareshcgi/MyCITest.git
+- name: buildtest
+  image: mcr.microsoft.com/dotnet/sdk:6.0
+  commands:
+  - cd MyCITest/sampledotnetapp
+  - dotnet tool install --global dotnet-sonarscanner
+  - export PATH="$PATH:/root/.dotnet/tools"
+  - dotnet-sonarscanner begin /k:"dotnetproject" /d:sonar.host.url="http://192.168.86.34:9000"  /d:sonar.login="e6c2a9c8f4a628e74117f7ad47783677c8601d60"
+  - echo $JAVA_HOME
+  - dotnet build
+  - dotnet sonarscanner end /d:sonar.login="e6c2a9c8f4a628e74117f7ad47783677c8601d60"
+  - dotnet pack
+  - cp bin/Debug/*.nupkg ../../

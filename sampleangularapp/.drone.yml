@@ -1,0 +1,43 @@
+---
+kind: pipeline
+type: docker
+name: default
+
+steps:
+- name: clonerepo
+  image: alpine/git
+  commands:
+  - rm -rf MyCITest
+  - ls -la
+  - git clone https://github.com/nareshcgi/MyCITest.git
+- name: nodetest
+  image: node
+  # pull: always # never, if-not-exists
+  commands:
+  - node --version
+  - npm --version
+  - npm install -g @angular/cli
+  - ng version
+  - cd MyCITest/sampleangularapp
+  - npm install
+  - ng build
+- name: packageangularapp
+  image: lunagod/drone-zip
+  settings:
+    input: 
+      - MyCITest/sampleangularapp/dist/sampleangularapp/*
+    output: release.zip
+- name: cleanup
+  image: alpine/git
+  # pull: always # never, if-not-exists
+  commands:
+  - ls -la
+  - rm -rf MyCITest
+  - rm -rf __*
+  - rm -rf node_modules
+  when:
+    status:
+    - success
+    - failure
+
+    # mvn archetype:generate -DgroupId=io.nareshcool.app -DartifactId=myjavawebapp -DarchetypeArtifactId=maven-archetype-webapp -DinteractiveMode=false

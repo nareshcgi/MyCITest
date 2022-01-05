@@ -1,0 +1,30 @@
+---
+kind: pipeline
+type: docker
+name: default
+
+steps:
+- name: clonerepo
+  image: alpine/git
+  commands:
+  - git clone https://github.com/nareshcgi/MyCITest.git
+- name: buildpackage 
+  image: python
+  pull: always # never, if-not-exists
+  commands:
+  - pip install django
+  - cd MyCITest/samplepythonapp
+  - python setup.py sdist
+  - cp dist/*.gz ../../
+- name: cleanup
+  image: alpine/git
+  # pull: always # never, if-not-exists
+  commands:
+  - ls -la
+  - rm -rf MyCITest
+  when:
+    status:
+    - success
+    - failure
+
+    # mvn archetype:generate -DgroupId=io.nareshcool.app -DartifactId=myjavawebapp -DarchetypeArtifactId=maven-archetype-webapp -DinteractiveMode=false
