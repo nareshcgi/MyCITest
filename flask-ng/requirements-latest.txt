@@ -1,0 +1,7 @@
+Flask
+#Flask-Login
+Flask-WTF
+Flask-Cors
+Werkzeug
+apscheduler
+git+https://github.com/maxcountryman/flask-login.git
