@@ -91,6 +91,7 @@ def check_session_timeout():
 # ****** END: ALL COMMON METHODS GOES HERE *********
 
 # ****** STAET: ALL GLOBAL STORE GOES HERE *********
+excluded_routes = ['login']
 users = [
     {
         "id": 1,
@@ -120,6 +121,12 @@ def addUser():
     else:
         return jsonify({"message":"User Already Exists!"})
 
+@app.route("/api/user", methods=["GET"])
+@login_required
+@csrf.exempt
+def getUser():
+    user = get_user(current_user.id)
+    return jsonify({"username": user["username"], "uuid": user["uuid"]})
 
 @app.route("/api/login", methods=["POST"])
 @csrf.exempt
@@ -131,23 +138,13 @@ def login():
         if user["username"] == username and user["password"] == password:
             user_model = User()
             user_model.id = user["id"]
+            user_model.username = user["username"]
             print("User {} logged in successfully!".format(username))
             login_user(user_model)
+            g.user=user
+            session['user'] = user
+            session['last_active'] = datetime.now()
             return jsonify({"login": True})
-    return jsonify({"login": False})
-
-@app.route("/api/data", methods=["GET"])
-@login_required
-@csrf.exempt
-def user_data():
-    user = get_user(current_user.id)
-    return jsonify({"username": user["username"], "uuid": user["uuid"]})
-
-@app.route("/api/getsession")
-@csrf.exempt
-def check_session():
-    if current_user.is_authenticated:
-        return jsonify({"login": True})
     return jsonify({"login": False})
 
 @app.route("/api/logout")
@@ -156,6 +153,21 @@ def check_session():
 def logout():
     logout_user()
     return jsonify({"logout": True})
+
+@app.route("/api/getsession")
+@csrf.exempt
+def check_session():
+    if current_user.is_authenticated:
+        return jsonify({"login": True})
+    return jsonify({"login": False})
+
+
+@app.route("/api/keepsessionalive", methods=["GET"])
+@login_required
+@csrf.exempt
+def keepSessionAlive():
+    # dummy call to keep session alive
+    pass
 
 @app.route('/', methods=['GET'])
 def root():
@@ -181,11 +193,15 @@ def user_loader(id: int):
 
 @app.before_request
 def before_request():
+    print("inside before request {}- Endpoint: {}".format(datetime.now(),request.endpoint))
+    if request.endpoint in excluded_routes:
+        return
     print("session: {}".format(session.values()))
     print("Last Active: {}".format(session.get('last_active', None)))
     session.permanent = True
     print("inside before request {}- Current User: {}".format(datetime.now(),current_user))
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=remember_seconds)
+    session['last_active'] = datetime.now()
     session.modified = True
     g.user = current_user
 # ****** END: ALL HANDLERS GOES HERE *********
